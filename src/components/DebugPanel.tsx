@@ -94,11 +94,7 @@ function StatusDot({ level }: { level: "good" | "warn" | "bad" }) {
 
 /* ─── Main Panel ─── */
 export default function DebugPanel({ configRef, fpsRef, gpuInfoRef }: Props) {
-  const [visible, setVisible] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return new URLSearchParams(window.location.search).has("debug")
-      || window.location.pathname.includes("new-debug");
-  });
+  const [visible, setVisible] = useState(false);
   const [config, setConfig] = useState<ShaderConfig>(getInitialConfig);
   const [fps, setFps] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -106,7 +102,14 @@ export default function DebugPanel({ configRef, fpsRef, gpuInfoRef }: Props) {
   const [gpuName, setGpuName] = useState("");
   const [res, setRes] = useState<[number, number]>([0, 0]);
 
-  useEffect(() => { configRef.current = config; }, []); // eslint-disable-line
+  // Hydration-safe: set visibility after mount based on URL
+  useEffect(() => {
+    configRef.current = config;
+    if (new URLSearchParams(window.location.search).has("debug")
+      || window.location.pathname.includes("new-debug")) {
+      setVisible(true);
+    }
+  }, []); // eslint-disable-line
 
   // Keyboard toggle
   useEffect(() => {
@@ -130,7 +133,7 @@ export default function DebugPanel({ configRef, fpsRef, gpuInfoRef }: Props) {
       if (mem) setMemMB(Math.round(mem.usedJSHeapSize / 1024 / 1024));
     }, 500);
     return () => clearInterval(id);
-  }, [visible, fpsRef, gpuInfoRef]);
+  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps -- refs are stable
 
   const update = <K extends keyof ShaderConfig>(key: K, value: ShaderConfig[K]) => {
     const next = { ...config, [key]: value };

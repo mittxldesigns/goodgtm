@@ -407,7 +407,7 @@ export default function WebGLBlob({ configRef, fpsRef, gpuInfoRef }: Props) {
       gl.deleteProgram(prog);
       gl.deleteBuffer(buf);
     };
-  }, [configRef, fpsRef, gpuInfoRef]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- refs are stable, effect runs once on mount
 
   return (
     <canvas ref={canvasRef}
