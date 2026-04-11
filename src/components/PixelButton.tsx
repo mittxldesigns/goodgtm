@@ -1,30 +1,15 @@
 "use client";
 
-declare global {
-  interface Window {
-    Calendly?: {
-      initPopupWidget: (opts: { url: string }) => void;
-    };
-  }
-}
-
-const CALENDLY_URL = "https://calendly.com/nate-goodgtm/30min";
+import { useCalendly } from "./CalendlyModal";
 
 export default function PixelButton() {
-  const openCalendly = () => {
-    if (window.Calendly) {
-      window.Calendly.initPopupWidget({ url: CALENDLY_URL });
-    } else {
-      window.open(CALENDLY_URL, "_blank");
-    }
-  };
+  const { open } = useCalendly();
 
   return (
     <button
-      onClick={openCalendly}
+      onClick={open}
       className="group relative inline-block pointer-events-auto cursor-pointer"
     >
-      {/* Outer border — bright magenta with pixel-notched corners */}
       <div
         className="relative px-5 py-2 transition-transform duration-150 group-hover:scale-105 group-active:scale-95"
         style={{
@@ -37,7 +22,6 @@ export default function PixelButton() {
           )`,
         }}
       >
-        {/* Inner fill — light pink/lavender */}
         <div
           className="absolute inset-[3px]"
           style={{
@@ -50,8 +34,6 @@ export default function PixelButton() {
             )`,
           }}
         />
-
-        {/* Text */}
         <span
           className="relative z-10 block text-center"
           style={{
@@ -66,8 +48,6 @@ export default function PixelButton() {
           START
         </span>
       </div>
-
-      {/* Pixel shadow — offset bottom-right */}
       <div
         className="absolute top-[3px] left-[3px] -z-10 w-full h-full opacity-30 group-hover:opacity-50 transition-opacity duration-150"
         style={{

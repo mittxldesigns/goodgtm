@@ -1,8 +1,7 @@
 "use client";
 
 import PageShell from "@/components/PageShell";
-
-const CALENDLY_URL = "https://calendly.com/nate-goodgtm/30min";
+import { useCalendly } from "@/components/CalendlyModal";
 
 const positions = [
   { title: "Founding Engineer", comp: "$200K – $350K", type: "Full-time" },
@@ -13,13 +12,7 @@ const positions = [
 ];
 
 export default function CareersPage() {
-  const openCalendly = () => {
-    if (window.Calendly) {
-      window.Calendly.initPopupWidget({ url: CALENDLY_URL });
-    } else {
-      window.open(CALENDLY_URL, "_blank");
-    }
-  };
+  const { open } = useCalendly();
 
   return (
     <PageShell>
@@ -38,7 +31,7 @@ export default function CareersPage() {
           {positions.map((pos) => (
             <button
               key={pos.title}
-              onClick={openCalendly}
+              onClick={open}
               className="group flex w-full items-center justify-between border-t border-white/10 py-4 transition-colors duration-200 hover:bg-white/[0.02] cursor-pointer text-left"
             >
               <div>

@@ -1,17 +1,10 @@
 "use client";
 
 import PageShell from "@/components/PageShell";
-
-const CALENDLY_URL = "https://calendly.com/nate-goodgtm/30min";
+import { useCalendly } from "@/components/CalendlyModal";
 
 export default function AboutPage() {
-  const openCalendly = () => {
-    if (window.Calendly) {
-      window.Calendly.initPopupWidget({ url: CALENDLY_URL });
-    } else {
-      window.open(CALENDLY_URL, "_blank");
-    }
-  };
+  const { open } = useCalendly();
 
   return (
     <PageShell>
@@ -32,7 +25,7 @@ export default function AboutPage() {
 
         <div className="flex gap-6 pt-2">
           <button
-            onClick={openCalendly}
+            onClick={open}
             className="px-6 py-3 border border-white/20 text-[11px] font-normal tracking-[0.2em] uppercase text-white/80 transition-all duration-200 hover:border-[#fa76ff]/50 hover:text-[#fa76ff] hover:bg-[#fa76ff]/5 cursor-pointer"
           >
             Book a Call
