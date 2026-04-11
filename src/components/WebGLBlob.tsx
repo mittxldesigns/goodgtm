@@ -31,19 +31,19 @@ export interface ShaderConfig {
 }
 
 export const DEFAULT_CONFIG: ShaderConfig = {
-  speed: 0.9,
-  contrast: 1.0,
-  glow: 0.45,
-  warmth: 0.55,
-  bulge: 0.35,
-  normalDetail: 1.8,
-  vignette: 0.35,
-  grain: 0.008,
-  halftone: 0.0,
+  speed: 1.85,
+  contrast: 1.7,
+  glow: 1.0,
+  warmth: 0.85,
+  bulge: 0.7,
+  normalDetail: 2.9,
+  vignette: 0.75,
+  grain: 0.021,
+  halftone: 0.4,
   halftoneSize: 4.0,
   quality: "medium",
-  showRing: true,
-  showCross: true,
+  showRing: false,
+  showCross: false,
   backgroundType: "waves",
 };
 

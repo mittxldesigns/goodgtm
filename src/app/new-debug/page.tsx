@@ -17,6 +17,18 @@ export default function NewDebugPage() {
       <CornerBrackets />
       <DebugPanel configRef={configRef} fpsRef={fpsRef} gpuInfoRef={gpuInfoRef} />
 
+      {/* Hero video — centered, pre-rendered with alpha transparency */}
+      <div className="fixed inset-0 z-10 flex items-center justify-center pointer-events-none">
+        <video
+          src="/hero.webm?v=4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-[320px] md:w-[400px]"
+        />
+      </div>
+
       {/* Brand — top center */}
       <div className="fixed top-0 left-0 right-0 z-40 flex justify-center pt-10">
         <h1 className="text-[13px] font-normal tracking-[0.4em] uppercase text-white/85">

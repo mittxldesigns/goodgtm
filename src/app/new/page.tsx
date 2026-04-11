@@ -1,10 +1,11 @@
 "use client";
 
 import { useRef } from "react";
-import Link from "next/link";
 import WebGLBlob, { ShaderConfig, DEFAULT_CONFIG, GpuInfo } from "@/components/WebGLBlob";
 import CornerBrackets from "@/components/CornerBrackets";
-import DebugPanel from "@/components/DebugPanel";
+import Navbar from "@/components/Navbar";
+import Preloader from "@/components/Preloader";
+import PixelButton from "@/components/PixelButton";
 
 export default function NewPage() {
   const configRef = useRef<ShaderConfig>(DEFAULT_CONFIG);
@@ -13,43 +14,41 @@ export default function NewPage() {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#0f0f0f]">
+      <Preloader />
+
       <WebGLBlob configRef={configRef} fpsRef={fpsRef} gpuInfoRef={gpuInfoRef} />
       <CornerBrackets />
-      <DebugPanel configRef={configRef} fpsRef={fpsRef} gpuInfoRef={gpuInfoRef} />
+      <Navbar />
 
-      {/* Brand — top center */}
-      <div className="fixed top-0 left-0 right-0 z-40 flex justify-center pt-10">
-        <h1 className="text-[13px] font-normal tracking-[0.4em] uppercase text-white/85">
-          Good<span className="text-[#e065e8]">GTM</span>
-        </h1>
+      {/* Hero video + CTA — centered stack */}
+      <div className="fixed inset-0 z-10 flex flex-col items-center justify-center gap-6 pointer-events-none">
+        <div>
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            poster="/hero-poster.webp"
+            className="w-[320px] md:w-[400px]"
+          >
+            <source src="/hero-alpha.mp4?v=2" type='video/mp4; codecs="hvc1"' />
+            <source src="/hero.webm?v=6" type='video/webm; codecs="vp9"' />
+          </video>
+        </div>
+        <PixelButton />
       </div>
 
       {/* Tagline */}
-      <div className="fixed bottom-[110px] left-0 right-0 z-30 flex justify-center">
+      <div className="fixed bottom-[80px] left-0 right-0 z-30 flex justify-center">
         <p className="text-[10px] font-light tracking-[0.25em] uppercase text-white/40">
           Go-to-market infrastructure for startups
         </p>
       </div>
 
-      {/* Bottom bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between pb-8 px-10">
-        <nav className="flex items-center">
-          {["About", "Services", "Contact"].map((item, i) => (
-            <span key={item} className="flex items-center">
-              {i > 0 && (
-                <span className="mx-3 text-[9px] text-white/20">·</span>
-              )}
-              <Link
-                href={`/${item.toLowerCase()}`}
-                className="text-[10px] font-normal tracking-[0.2em] uppercase text-white/55 hover:text-white/90 transition-colors duration-300"
-              >
-                {item}
-              </Link>
-            </span>
-          ))}
-        </nav>
+      {/* Location — bottom right */}
+      <div className="fixed bottom-0 right-0 z-40 pb-8 pr-10">
         <span className="text-[10px] font-light tracking-[0.2em] uppercase text-white/35">
-          Florida
+          NYC
         </span>
       </div>
     </div>
