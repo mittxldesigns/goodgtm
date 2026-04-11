@@ -1,18 +1,32 @@
 "use client";
 
+declare global {
+  interface Window {
+    Calendly?: {
+      initPopupWidget: (opts: { url: string }) => void;
+    };
+  }
+}
+
 const CALENDLY_URL = "https://calendly.com/nate-goodgtm/30min";
 
 export default function PixelButton() {
+  const openCalendly = () => {
+    if (window.Calendly) {
+      window.Calendly.initPopupWidget({ url: CALENDLY_URL });
+    } else {
+      window.open(CALENDLY_URL, "_blank");
+    }
+  };
+
   return (
-    <a
-      href={CALENDLY_URL}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group relative inline-block pointer-events-auto"
+    <button
+      onClick={openCalendly}
+      className="group relative inline-block pointer-events-auto cursor-pointer"
     >
       {/* Outer border — bright magenta with pixel-notched corners */}
       <div
-        className="relative px-8 py-3 transition-transform duration-150 group-hover:scale-105 group-active:scale-95"
+        className="relative px-5 py-2 transition-transform duration-150 group-hover:scale-105 group-active:scale-95"
         style={{
           background: "#d946ef",
           clipPath: `polygon(
@@ -42,14 +56,14 @@ export default function PixelButton() {
           className="relative z-10 block text-center"
           style={{
             fontFamily: "'Press Start 2P', monospace",
-            fontSize: "11px",
+            fontSize: "7px",
             color: "#c026d3",
             letterSpacing: "2px",
             textShadow: "1px 1px 0px #f0abfc44",
             imageRendering: "pixelated",
           }}
         >
-          BOOK A CALL
+          START
         </span>
       </div>
 
@@ -66,6 +80,6 @@ export default function PixelButton() {
           )`,
         }}
       />
-    </a>
+    </button>
   );
 }

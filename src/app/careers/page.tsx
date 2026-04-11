@@ -1,4 +1,8 @@
+"use client";
+
 import PageShell from "@/components/PageShell";
+
+const CALENDLY_URL = "https://calendly.com/nate-goodgtm/30min";
 
 const positions = [
   { title: "Founding Engineer", comp: "$200K – $350K", type: "Full-time" },
@@ -9,6 +13,14 @@ const positions = [
 ];
 
 export default function CareersPage() {
+  const openCalendly = () => {
+    if (window.Calendly) {
+      window.Calendly.initPopupWidget({ url: CALENDLY_URL });
+    } else {
+      window.open(CALENDLY_URL, "_blank");
+    }
+  };
+
   return (
     <PageShell>
       <div className="space-y-8">
@@ -24,12 +36,10 @@ export default function CareersPage() {
 
         <div className="space-y-0">
           {positions.map((pos) => (
-            <a
+            <button
               key={pos.title}
-              href="https://calendly.com/nate-goodgtm/30min"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex items-center justify-between border-t border-white/10 py-4 transition-colors duration-200 hover:bg-white/[0.02]"
+              onClick={openCalendly}
+              className="group flex w-full items-center justify-between border-t border-white/10 py-4 transition-colors duration-200 hover:bg-white/[0.02] cursor-pointer text-left"
             >
               <div>
                 <h3 className="text-[13px] font-medium tracking-wide text-white/80 group-hover:text-white transition-colors duration-200">
@@ -42,7 +52,7 @@ export default function CareersPage() {
               <span className="text-[11px] font-light tracking-wide text-white/30 group-hover:text-white/60 transition-colors duration-200">
                 {pos.comp}
               </span>
-            </a>
+            </button>
           ))}
           <div className="border-t border-white/10" />
         </div>

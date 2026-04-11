@@ -21,7 +21,7 @@ export default function NewPage() {
       <Navbar />
 
       {/* Hero video + CTA — centered stack */}
-      <div className="fixed inset-0 z-10 flex flex-col items-center justify-center gap-6 pointer-events-none">
+      <div className="fixed inset-0 z-10 flex flex-col items-center justify-center gap-4 pointer-events-none" style={{ paddingTop: "5vh" }}>
         <div>
           <video
             autoPlay
@@ -29,7 +29,7 @@ export default function NewPage() {
             muted
             playsInline
             poster="/hero-poster.webp"
-            className="w-[320px] md:w-[400px]"
+            className="w-[380px] md:w-[460px]"
           >
             <source src="/hero-alpha.mp4?v=2" type='video/mp4; codecs="hvc1"' />
             <source src="/hero.webm?v=6" type='video/webm; codecs="vp9"' />
