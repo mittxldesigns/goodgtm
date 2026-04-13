@@ -31,8 +31,8 @@ export default function NewPage() {
             poster="/hero-poster.webp"
             className="w-[380px] md:w-[460px]"
           >
-            <source src="/hero-alpha.mp4?v=2" type='video/mp4; codecs="hvc1"' />
-            <source src="/hero.webm?v=6" type='video/webm; codecs="vp9"' />
+            <source src="/hero-alpha.mp4?v=3" type='video/mp4; codecs="hvc1"' />
+            <source src="/hero.webm?v=7" type='video/webm; codecs="vp9"' />
           </video>
         </div>
         <PixelButton />
