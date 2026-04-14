@@ -6,6 +6,7 @@ import CornerBrackets from "@/components/CornerBrackets";
 import Navbar from "@/components/Navbar";
 import Preloader from "@/components/Preloader";
 import PixelButton from "@/components/PixelButton";
+import DraggableVideo from "@/components/DraggableVideo";
 
 export default function NewPage() {
   const configRef = useRef<ShaderConfig>(DEFAULT_CONFIG);
@@ -22,19 +23,7 @@ export default function NewPage() {
 
       {/* Hero video + CTA — centered stack */}
       <div className="fixed inset-0 z-10 flex flex-col items-center justify-center gap-4 pointer-events-none" style={{ paddingTop: "5vh" }}>
-        <div>
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            poster="/hero-poster.webp"
-            className="w-[380px] md:w-[460px]"
-          >
-            <source src="/hero-alpha.mp4?v=5" type='video/mp4; codecs="hvc1"' />
-            <source src="/hero.webm?v=9" type='video/webm; codecs="vp9"' />
-          </video>
-        </div>
+        <DraggableVideo />
         <PixelButton />
       </div>
 
