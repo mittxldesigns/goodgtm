@@ -216,7 +216,7 @@ export default function DraggableVideo() {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
-      className="pointer-events-auto cursor-grab active:cursor-grabbing touch-none select-none"
+      className="pointer-events-auto cursor-grab active:cursor-grabbing touch-pan-y select-none"
     >
       <video
         ref={videoRef}

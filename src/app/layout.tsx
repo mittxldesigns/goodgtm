@@ -13,14 +13,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="en" className="antialiased">
       <head>
         <link
           href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="h-full">
+      <body>
         <CalendlyProvider>{children}</CalendlyProvider>
       </body>
     </html>
