@@ -1,15 +1,13 @@
 "use client";
 
-export default function PixelButton() {
-  const scrollToAbout = () => {
-    document
-      .getElementById("about")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+import { useCalendly } from "./CalendlyModal";
+
+export default function PixelButton({ onClick }: { onClick?: () => void }) {
+  const { open } = useCalendly();
 
   return (
     <button
-      onClick={scrollToAbout}
+      onClick={onClick ?? open}
       className="group relative inline-block pointer-events-auto cursor-pointer"
     >
       <div
