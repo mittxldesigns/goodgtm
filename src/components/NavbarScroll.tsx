@@ -12,8 +12,8 @@ function goToSection(id: string) {
   if (el) {
     el.scrollIntoView({ behavior: "smooth", block: "start" });
   } else {
-    // Section isn't on this page — send the visitor to it on the scroll page.
-    window.location.href = `/new#${id}`;
+    // Section isn't on this page — send the visitor to it on the homepage.
+    window.location.href = `/#${id}`;
   }
 }
 
