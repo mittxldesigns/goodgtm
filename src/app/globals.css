@@ -46,3 +46,42 @@ body {
   background: rgba(250, 118, 255, 0.3);
   color: #ffffff;
 }
+
+/* ── Preloader ──────────────────────────────────────────────
+   Driven by CSS (compositor) so the bar/number stay smooth even while the
+   main thread is busy decoding the hero frames + initialising WebGL. A
+   JS/rAF-driven bar freezes under that load and snaps to full. */
+@property --pl-count {
+  syntax: "<integer>";
+  initial-value: 0;
+  inherits: false;
+}
+
+.pl-bar {
+  transform: scaleX(0);
+  transform-origin: left center;
+  animation: pl-fill 1300ms cubic-bezier(0.45, 0, 0.15, 1) forwards;
+}
+
+@keyframes pl-fill {
+  to { transform: scaleX(1); }
+}
+
+.pl-num {
+  --pl-count: 0;
+  counter-reset: plc var(--pl-count);
+  animation: pl-count 1300ms cubic-bezier(0.45, 0, 0.15, 1) forwards;
+}
+
+.pl-num::after {
+  content: counter(plc);
+}
+
+@keyframes pl-count {
+  to { --pl-count: 100; }
+}
+
+@keyframes pl-scanline {
+  0% { top: 0%; }
+  100% { top: 100%; }
+}
