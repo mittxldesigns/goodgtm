@@ -151,6 +151,7 @@ export default function DraggableVideo() {
     // If already cached, go straight to canvas
     if (cachedFrames.length) {
       setCanvasReady(true);
+      window.dispatchEvent(new Event("hero-ready"));
       fractional.current = 0;
       draw(0);
       startLoop();
@@ -162,6 +163,7 @@ export default function DraggableVideo() {
     loadFrames().then(() => {
       if (cancelled) return;
       setCanvasReady(true);
+      window.dispatchEvent(new Event("hero-ready"));
       fractional.current = 0;
       draw(0);
       startLoop();
@@ -175,37 +177,29 @@ export default function DraggableVideo() {
 
   // ── pointer handlers ──────────────────────────────────────
   const onPointerDown = useCallback((e: React.PointerEvent) => {
+    // Only allow rotating once frames are loaded. Dragging during the video
+    // phase scrubs the still-buffering hero video and blanks it out.
+    if (!cachedFrames.length) return;
     dragging.current = true;
     lastX.current = e.clientX;
     lastMoveTime.current = performance.now();
     velocity.current = 0;
     cancelAnimationFrame(rafId.current);
-    if (!cachedFrames.length) videoRef.current?.pause();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   }, []);
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragging.current) return;
+    if (!dragging.current || !cachedFrames.length) return;
     const now = performance.now();
     const dx = e.clientX - lastX.current;
     const dt = now - lastMoveTime.current;
     lastX.current = e.clientX;
     lastMoveTime.current = now;
 
-    if (cachedFrames.length) {
-      if (dt > 0) velocity.current = (dx * sens.current) / dt;
-      const total = cachedFrames.length;
-      fractional.current = wrap(fractional.current + dx * sens.current, total);
-      draw(Math.floor(fractional.current));
-      return;
-    }
-
-    // Video fallback
-    const video = videoRef.current;
-    if (!video || !video.duration) return;
-    let t = video.currentTime + dx * 0.012;
-    t = ((t % video.duration) + video.duration) % video.duration;
-    video.currentTime = t;
+    if (dt > 0) velocity.current = (dx * sens.current) / dt;
+    const total = cachedFrames.length;
+    fractional.current = wrap(fractional.current + dx * sens.current, total);
+    draw(Math.floor(fractional.current));
   }, [draw]);
 
   const onPointerUp = useCallback(() => releaseDrag(), [releaseDrag]);

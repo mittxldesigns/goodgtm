@@ -3,34 +3,49 @@
 import { useState, useEffect, useRef } from "react";
 
 const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*";
-const DURATION = 1800; // Total preloader duration in ms
+const FILL_MS = 1400; // ease the bar toward ~92% over this time
+const MIN_SHOW = 700; // never flash shorter than this
+const MAX_WAIT = 7000; // hard cap so it can never hang
 
 export default function Preloader() {
-  const [phase, setPhase] = useState<"boot" | "split" | "gone">("gone");
+  // Default to "boot" so the cover exists on the very first paint (SSR included) —
+  // otherwise the unready WebGL/Game Boy canvas flashes before the loader appears.
+  const [phase, setPhase] = useState<"boot" | "split" | "gone">("boot");
   const rafRef = useRef<number>(0);
   const startRef = useRef(0);
+  const readyRef = useRef(false);
   const lineRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const numRef = useRef<HTMLDivElement>(null);
   const lastScramble = useRef(0);
 
-  // Only show preloader on first visit this session
+  // Skip the preloader on repeat visits within the session.
   useEffect(() => {
-    const seen = sessionStorage.getItem("gtm-preloader-seen");
-    if (!seen) {
+    if (sessionStorage.getItem("gtm-preloader-seen")) {
+      setPhase("gone");
+    } else {
       sessionStorage.setItem("gtm-preloader-seen", "1");
-      setPhase("boot");
     }
   }, []);
 
   useEffect(() => {
     if (phase !== "boot") return;
     startRef.current = performance.now();
+    readyRef.current = document.readyState === "complete";
+
+    // The hero (DraggableVideo) fires this once its frames are decoded.
+    const onReady = () => { readyRef.current = true; };
+    window.addEventListener("hero-ready", onReady);
+    window.addEventListener("load", onReady);
 
     const animate = (now: number) => {
       const elapsed = now - startRef.current;
-      const raw = Math.min(elapsed / DURATION, 1);
-      const val = Math.round(raw * raw * (3 - 2 * raw) * 100); // smoothstep
+      const ready = readyRef.current || elapsed >= MAX_WAIT;
+
+      // Smoothstep toward 92%; only allow the final 100% once the hero is ready.
+      const t = Math.min(elapsed / FILL_MS, 1);
+      const eased = t * t * (3 - 2 * t);
+      const val = Math.round(Math.min(eased, ready ? 1 : 0.92) * 100);
 
       if (lineRef.current) lineRef.current.style.width = `${val}%`;
       if (numRef.current) {
@@ -39,12 +54,15 @@ export default function Preloader() {
       }
       if (textRef.current && now - lastScramble.current > 60) {
         lastScramble.current = now;
-        textRef.current.textContent = val >= 100
-          ? "G T M"
-          : Array.from({ length: 3 }, () => CHARS[Math.floor(Math.random() * CHARS.length)]).join(" ");
+        textRef.current.textContent =
+          val >= 100
+            ? "G T M"
+            : Array.from({ length: 3 }, () => CHARS[Math.floor(Math.random() * CHARS.length)]).join(" ");
       }
 
-      if (val >= 100) {
+      // Split away only when the bar is full, the hero is ready, and we've shown
+      // for at least MIN_SHOW (so it never flickers).
+      if (val >= 100 && ready && elapsed >= MIN_SHOW) {
         setTimeout(() => setPhase("split"), 120);
         return;
       }
@@ -52,7 +70,11 @@ export default function Preloader() {
     };
 
     rafRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(rafRef.current);
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      window.removeEventListener("hero-ready", onReady);
+      window.removeEventListener("load", onReady);
+    };
   }, [phase]);
 
   useEffect(() => {
