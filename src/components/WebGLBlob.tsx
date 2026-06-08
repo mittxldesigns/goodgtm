@@ -465,20 +465,33 @@ export default function WebGLBlob({ configRef, fpsRef, gpuInfoRef }: Props) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- refs are stable, effect runs once on mount
 
   return (
-    <canvas ref={canvasRef} aria-hidden
+    // iOS 26 Safari clips position:fixed elements to the area BETWEEN the
+    // toolbars, so a normal fixed full-screen background won't render behind the
+    // status bar or the bottom search bar — no amount of vh/lvh/viewport-fit
+    // fixes that. Documented workaround (Apple Developer Forums thread
+    // 256138682): a SHORT fixed outer (height < 50vh) whose taller inner
+    // element OVERFLOWS behind Safari's dynamic UI, giving true edge-to-edge
+    // coverage. "Literally every style in here is relevant."
+    <div
+      aria-hidden
       style={{
         position: "fixed",
-        // Over-cover the iOS safe areas: start above the status-bar inset and
-        // extend past the home-indicator inset so the bg fills the whole device
-        // edge-to-edge regardless of how lvh resolves under viewport-fit=cover.
-        // env(...) is 0 on non-notched devices / when cover isn't active.
-        top: "calc(0px - env(safe-area-inset-top, 0px))",
+        top: 0,
         left: 0,
+        right: 0,
+        display: "block",
         width: "100vw",
-        height:
-          "calc(100lvh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))",
+        height: "48px",
         zIndex: 5,
         pointerEvents: "none",
-      }} />
+      }}
+    >
+      <div style={{ width: "100vw", height: "100lvh" }}>
+        <canvas
+          ref={canvasRef}
+          style={{ display: "block", width: "100%", height: "100%" }}
+        />
+      </div>
+    </div>
   );
 }
