@@ -9,9 +9,11 @@ import PixelButton from "@/components/PixelButton";
 import DraggableVideo from "@/components/DraggableVideo";
 import AboutSection from "@/components/AboutSection";
 import ServicesSection from "@/components/ServicesSection";
+import DebugPanel from "@/components/DebugPanel";
 
 export default function Home() {
-  const configRef = useRef<ShaderConfig>(DEFAULT_CONFIG);
+  // clone so WebGLBlob writing the device quality tier doesn't mutate the shared module default
+  const configRef = useRef<ShaderConfig>({ ...DEFAULT_CONFIG });
   const fpsRef = useRef(0);
   const gpuInfoRef = useRef<GpuInfo>({ renderer: "", resolution: [0, 0] });
 
@@ -39,6 +41,9 @@ export default function Home() {
 
       {/* Persistent WebGL background — fixed, spans every section */}
       <WebGLBlob configRef={configRef} fpsRef={fpsRef} gpuInfoRef={gpuInfoRef} />
+
+      {/* Perf diagnostics — only renders when the URL hash is #debug */}
+      <DebugPanel configRef={configRef} fpsRef={fpsRef} gpuInfoRef={gpuInfoRef} />
 
       {/* Global chrome */}
       <CornerBrackets />
@@ -71,13 +76,14 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Section 2 — About */}
-        <section id="about" className="relative z-10 min-h-[100svh] w-full bg-[#0a0a0a]">
+        {/* Section 2 — About — transparent so the fixed WebGL background shows
+            through here too (continuous animated bg across every section) */}
+        <section id="about" className="relative z-10 min-h-[100svh] w-full">
           <AboutSection />
         </section>
 
-        {/* Section 3 — Services */}
-        <section id="services" className="relative z-10 min-h-[100svh] w-full bg-[#0a0a0a]">
+        {/* Section 3 — Services — transparent, same animated bg shows through */}
+        <section id="services" className="relative z-10 min-h-[100svh] w-full">
           <ServicesSection />
         </section>
       </main>

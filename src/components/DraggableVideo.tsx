@@ -7,9 +7,31 @@ const MIN_VELOCITY = 0.05;
 const TOTAL_FRAMES = 252;
 const FPS = 24;
 
+// ── Decode-time downscale to cut memory. 252 frames at 460x259 RGBA ≈ 120MB
+// resident — an OOM / GC-jank risk on low-RAM phones. Desktop keeps full res;
+// phones use a smaller backing store matched to the on-screen display size. ──
+function pickFrameSize(): { w: number; h: number } {
+  if (typeof window === "undefined") return { w: 460, h: 259 };
+  const isMobile = window.matchMedia("(max-width: 768px)").matches;
+  if (!isMobile) return { w: 460, h: 259 };
+  const mem = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+  if (mem && mem <= 4) return { w: 262, h: 148 }; // budget device: max cut (~39MB)
+  return { w: 380, h: 214 }; // typical phone: stays sharp (~82MB)
+}
+
 // ── Module-level frame cache (survives navigation) ──────────
 let cachedFrames: ImageBitmap[] = [];
 let cacheLoading = false;
+let frameSize: { w: number; h: number } | null = null;
+function getFrameSize() {
+  if (!frameSize) frameSize = pickFrameSize();
+  return frameSize;
+}
+
+// Side-effect-free status getter for the #debug HUD (no React import needed).
+export function framesLoaded() {
+  return { loaded: cachedFrames.length, total: TOTAL_FRAMES };
+}
 
 function loadFrames(): Promise<ImageBitmap[]> {
   if (cachedFrames.length) return Promise.resolve(cachedFrames);
@@ -25,22 +47,37 @@ function loadFrames(): Promise<ImageBitmap[]> {
   }
 
   cacheLoading = true;
+  const { w, h } = getFrameSize();
 
-  const promises = Array.from({ length: TOTAL_FRAMES }, (_, i) => {
+  // Per-frame: resolve to a (downscaled) ImageBitmap, or null on error/timeout.
+  // One bad frame must NOT reject the whole batch — that would leave the cache
+  // empty forever and the drag permanently dead on flaky networks.
+  const settle = (i: number): Promise<ImageBitmap | null> => {
     const idx = String(i + 1).padStart(3, "0");
-    return new Promise<ImageBitmap>((resolve, reject) => {
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = (v: ImageBitmap | null) => {
+        if (!done) { done = true; resolve(v); }
+      };
+      const timer = setTimeout(() => finish(null), 12000);
       const img = new Image();
-      img.onload = () => createImageBitmap(img).then(resolve).catch(reject);
-      img.onerror = reject;
+      img.onload = () =>
+        createImageBitmap(img, { resizeWidth: w, resizeHeight: h, resizeQuality: "high" })
+          .then((bmp) => { clearTimeout(timer); finish(bmp); })
+          .catch(() => { clearTimeout(timer); finish(null); });
+      img.onerror = () => { clearTimeout(timer); finish(null); };
       img.src = `/frames/f${idx}.webp`;
     });
-  });
+  };
 
-  return Promise.all(promises).then((bitmaps) => {
-    cachedFrames = bitmaps;
-    cacheLoading = false;
-    return bitmaps;
-  });
+  return Promise.all(Array.from({ length: TOTAL_FRAMES }, (_, i) => settle(i)))
+    .then((results) => {
+      cachedFrames = results.filter((b): b is ImageBitmap => b !== null);
+      return cachedFrames;
+    })
+    .finally(() => {
+      cacheLoading = false;
+    });
 }
 
 export default function DraggableVideo() {
@@ -132,11 +169,35 @@ export default function DraggableVideo() {
     };
   }, [releaseDrag]);
 
+  // ── pause the idle-spin while the hero is scrolled offscreen ───────────────
+  // Redrawing the canvas ~24x/sec for an invisible hero wastes the main thread
+  // and competes with scroll on mobile. (Same IntersectionObserver pattern as
+  // NavbarScroll.) The WebGL background keeps running — it's the full-page bg.
+  useEffect(() => {
+    const node = canvasRef.current;
+    if (!node) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const e = entries[0];
+        if (!e) return;
+        if (e.isIntersecting) {
+          if (!dragging.current && cachedFrames.length) startLoop();
+        } else {
+          cancelAnimationFrame(rafId.current);
+        }
+      },
+      { threshold: 0, rootMargin: "100px" }
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, [startLoop, canvasReady]);
+
   const canvasCallback = useCallback((node: HTMLCanvasElement | null) => {
     canvasRef.current = node;
     if (node) {
-      node.width = 460;
-      node.height = 259;
+      const { w, h } = getFrameSize();
+      node.width = w;
+      node.height = h;
       ctxRef.current = node.getContext("2d", { alpha: true });
     } else {
       ctxRef.current = null;
@@ -162,6 +223,9 @@ export default function DraggableVideo() {
 
     loadFrames().then(() => {
       if (cancelled) return;
+      // Too many frames failed to load — keep the <video> fallback rather than
+      // showing a broken/stuttery canvas.
+      if (cachedFrames.length < TOTAL_FRAMES * 0.8) return;
       setCanvasReady(true);
       window.dispatchEvent(new Event("hero-ready"));
       fractional.current = 0;
@@ -218,11 +282,14 @@ export default function DraggableVideo() {
         loop
         muted
         playsInline
+        preload="metadata"
         poster="/hero-poster.webp"
         className={`w-[82vw] max-w-[380px] md:w-[460px] md:max-w-none ${canvasReady ? "hidden" : ""}`}
       >
-        <source src="/hero-alpha.mp4?v=5" type='video/mp4; codecs="hvc1"' />
+        {/* webm first (3.8MB) so Chrome/Android/FF don't pull the 12.6MB mp4;
+            mp4/hvc1 stays as the iOS fallback if vp9-webm can't decode. */}
         <source src="/hero.webm?v=9" type='video/webm; codecs="vp9"' />
+        <source src="/hero-alpha.mp4?v=5" type='video/mp4; codecs="hvc1"' />
       </video>
 
       <canvas

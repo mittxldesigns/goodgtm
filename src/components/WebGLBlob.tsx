@@ -52,11 +52,26 @@ export interface GpuInfo {
   resolution: [number, number];
 }
 
-const QUALITY = {
-  low:    { fps: 15, scale: 0.5  },
-  medium: { fps: 24, scale: 0.75 },
-  high:   { fps: 60, scale: 1.0  },
+export const QUALITY = {
+  low:    { fps: 15, scale: 0.5,  dprCap: 1.5 },
+  medium: { fps: 24, scale: 0.75, dprCap: 2   },
+  high:   { fps: 60, scale: 1.0,  dprCap: 2   },
 };
+
+// Pick an initial quality tier from device signals. Capped at "medium" so
+// desktop/laptop behavior is identical to before; only touch devices that look
+// weak are downgraded to "low". One-way at mount (no mid-session flapping).
+function pickQuality(renderer: string): ShaderConfig["quality"] {
+  if (typeof window === "undefined") return "medium";
+  const coarse = window.matchMedia("(pointer: coarse)").matches;
+  if (!coarse) return "medium"; // desktop/laptop — leave exactly as-is
+  const mem = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+  const cores = navigator.hardwareConcurrency;
+  const dpr = window.devicePixelRatio || 1;
+  const weakGpu = /Adreno [1-5]\d{2}\b|Mali-4|Mali-T|PowerVR/i.test(renderer || "");
+  if ((mem && mem <= 4) || (cores && cores <= 4) || dpr >= 3 || weakGpu) return "low";
+  return "medium";
+}
 
 /* ─── Shaders ─── */
 const VERT = `#version 300 es
@@ -304,14 +319,15 @@ export default function WebGLBlob({ configRef, fpsRef, gpuInfoRef }: Props) {
     if (!_gl) return;
     const gl = _gl;
 
-    // GPU info
+    // GPU info + device-based initial quality tier
+    const ext = gl.getExtension("WEBGL_debug_renderer_info");
+    const renderer: string = ext
+      ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)
+      : "Unknown";
     if (gpuInfoRef) {
-      const ext = gl.getExtension("WEBGL_debug_renderer_info");
-      gpuInfoRef.current = {
-        renderer: ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : "Unknown",
-        resolution: [0, 0],
-      };
+      gpuInfoRef.current = { renderer, resolution: [0, 0] };
     }
+    configRef.current.quality = pickQuality(renderer);
 
     // Initial compile
     let currentBgType = configRef.current.backgroundType;
@@ -337,10 +353,40 @@ export default function WebGLBlob({ configRef, fpsRef, gpuInfoRef }: Props) {
     let lastFrame = 0;
     let frameCount = 0;
     let fpsTime = performance.now();
-    const dpr = Math.min(devicePixelRatio, 2);
+
+    // Cache CSS viewport dims; refresh only on a settled resize/orientation
+    // change (NOT every frame). This stops the mobile URL-bar show/hide during
+    // scroll from reallocating the GL backing store mid-scroll (a real jank
+    // source), while keeping the canvas correct after rotation/resize.
+    let cssW = window.innerWidth;
+    let cssH = window.innerHeight;
+    let resizeT: ReturnType<typeof setTimeout> | undefined;
+    const onResize = () => {
+      clearTimeout(resizeT);
+      resizeT = setTimeout(() => {
+        cssW = window.innerWidth;
+        cssH = window.innerHeight;
+      }, 150);
+    };
+    const onVis = () => {
+      if (!document.hidden) {
+        // resync the FPS sampler after a hidden gap so the HUD isn't skewed
+        lastFrame = 0;
+        fpsTime = performance.now();
+        frameCount = 0;
+      }
+    };
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    document.addEventListener("visibilitychange", onVis);
 
     const draw = (now: number) => {
       animFrame = requestAnimationFrame(draw);
+
+      // Pause work while hidden (keep the loop alive so it resumes instantly);
+      // don't burn GPU on an invisible canvas.
+      if (document.hidden) return;
+
       const cfg = configRef.current;
 
       // Background type change → recompile
@@ -362,9 +408,10 @@ export default function WebGLBlob({ configRef, fpsRef, gpuInfoRef }: Props) {
       if (now - lastFrame < 1000 / q.fps) return;
       lastFrame = now;
 
-      // Resolution
-      const w = Math.floor(window.innerWidth * q.scale * dpr) || 1;
-      const h = Math.floor(window.innerHeight * q.scale * dpr) || 1;
+      // Resolution (per-tier DPR cap; the soft bg tolerates a lower internal res)
+      const effDpr = Math.min(window.devicePixelRatio || 1, q.dprCap);
+      const w = Math.floor(cssW * q.scale * effDpr) || 1;
+      const h = Math.floor(cssH * q.scale * effDpr) || 1;
       if (canvas.width !== w || canvas.height !== h) {
         canvas.width = w; canvas.height = h;
         gl.viewport(0, 0, w, h);
@@ -404,6 +451,10 @@ export default function WebGLBlob({ configRef, fpsRef, gpuInfoRef }: Props) {
 
     return () => {
       cancelAnimationFrame(animFrame);
+      clearTimeout(resizeT);
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+      document.removeEventListener("visibilitychange", onVis);
       gl.deleteProgram(prog);
       gl.deleteBuffer(buf);
     };

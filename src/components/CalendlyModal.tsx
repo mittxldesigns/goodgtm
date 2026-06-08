@@ -32,14 +32,18 @@ export function CalendlyProvider({ children }: { children: React.ReactNode }) {
     <CalendlyContext.Provider value={{ open }}>
       {children}
 
-      {/* Preloaded iframe — always in DOM once mounted, visibility toggled */}
+      {/* Preloaded iframe — always in DOM once mounted, shown/hidden via display.
+          display:none (not just opacity:0) so the full-screen fixed overlay and
+          its Calendly iframe fully leave the render/hit-test tree when closed.
+          On mobile (esp. iOS Safari) a persistent fixed overlay + iframe keeps
+          capturing touch/scroll even at opacity:0, leaving the page unscrollable
+          after closing the popup. display:none does NOT reload the iframe, so it
+          stays preloaded/warm for instant reopen. */}
       {mounted && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center"
           style={{
-            opacity: visible ? 1 : 0,
-            pointerEvents: visible ? "auto" : "none",
-            transition: "opacity 0.3s ease",
+            display: visible ? "flex" : "none",
           }}
         >
           {/* Backdrop */}
