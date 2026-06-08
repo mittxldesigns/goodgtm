@@ -219,7 +219,7 @@ export default function DraggableVideo() {
         muted
         playsInline
         poster="/hero-poster.webp"
-        className={`w-[380px] md:w-[460px] ${canvasReady ? "hidden" : ""}`}
+        className={`w-[82vw] max-w-[380px] md:w-[460px] md:max-w-none ${canvasReady ? "hidden" : ""}`}
       >
         <source src="/hero-alpha.mp4?v=5" type='video/mp4; codecs="hvc1"' />
         <source src="/hero.webm?v=9" type='video/webm; codecs="vp9"' />
@@ -227,7 +227,7 @@ export default function DraggableVideo() {
 
       <canvas
         ref={canvasCallback}
-        className={`w-[380px] md:w-[460px] ${canvasReady ? "" : "hidden"}`}
+        className={`w-[82vw] max-w-[380px] md:w-[460px] md:max-w-none ${canvasReady ? "" : "hidden"}`}
       />
     </div>
   );

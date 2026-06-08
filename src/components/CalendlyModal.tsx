@@ -20,7 +20,12 @@ export function CalendlyProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(t);
   }, []);
 
-  const open = useCallback(() => setVisible(true), []);
+  // Mount on demand too, so a tap before the 1.5s preload still opens instantly
+  // (otherwise the click sets visible=true but the iframe isn't in the DOM yet).
+  const open = useCallback(() => {
+    setMounted(true);
+    setVisible(true);
+  }, []);
   const close = useCallback(() => setVisible(false), []);
 
   return (
@@ -48,7 +53,7 @@ export function CalendlyProvider({ children }: { children: React.ReactNode }) {
 
           {/* Modal */}
           <div
-            className="relative w-[90vw] max-w-[480px] h-[85vh] max-h-[700px] rounded-xl overflow-hidden"
+            className="relative w-[90vw] max-w-[480px] h-[85dvh] max-h-[700px] rounded-xl overflow-hidden"
             style={{
               transform: visible ? "scale(1) translateY(0)" : "scale(0.95) translateY(12px)",
               transition: "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",

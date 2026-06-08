@@ -54,7 +54,7 @@ export default function Home() {
       {/* Sections — the document itself scrolls (native, trackpad-friendly) */}
       <main className="w-full">
         {/* Section 1 — Hero */}
-        <section id="hero" className="relative h-screen w-full overflow-hidden">
+        <section id="hero" className="relative min-h-[100svh] w-full overflow-hidden">
           <div
             className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 pointer-events-none"
             style={{ paddingTop: "5vh" }}
@@ -72,12 +72,12 @@ export default function Home() {
         </section>
 
         {/* Section 2 — About */}
-        <section id="about" className="relative z-10 h-screen w-full bg-[#0a0a0a]">
+        <section id="about" className="relative z-10 min-h-[100svh] w-full bg-[#0a0a0a]">
           <AboutSection />
         </section>
 
         {/* Section 3 — Services */}
-        <section id="services" className="relative z-10 h-screen w-full bg-[#0a0a0a]">
+        <section id="services" className="relative z-10 min-h-[100svh] w-full bg-[#0a0a0a]">
           <ServicesSection />
         </section>
       </main>

@@ -24,9 +24,9 @@ export default function ServicesSection() {
   const { open } = useCalendly();
 
   return (
-    <div className="relative z-30 flex h-full items-center justify-center px-10 pt-16">
+    <div className="relative z-30 flex min-h-[100svh] w-full items-center justify-center px-6 md:px-10 py-20">
       <div className="max-w-2xl w-full">
-        <div className="space-y-10">
+        <div className="space-y-8 md:space-y-10">
           <div className="space-y-4">
             <h2 className="text-[11px] font-normal tracking-[0.25em] uppercase text-white/50">
               Services
@@ -40,7 +40,7 @@ export default function ServicesSection() {
             {services.map((svc, i) => (
               <div
                 key={svc.title}
-                className="border-t border-white/10 py-6 group"
+                className="border-t border-white/10 py-5 md:py-6 group"
               >
                 <div className="flex items-baseline gap-4">
                   <span className="text-[11px] font-light text-[#fa76ff]/40 tabular-nums">
