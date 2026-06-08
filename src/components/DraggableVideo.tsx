@@ -87,6 +87,9 @@ export default function DraggableVideo() {
   const currentFrame = useRef(0);
   const fractional = useRef(0);
   const dragging = useRef(false);
+  // Holds the touch-start position until we know the gesture's direction, so we
+  // can let vertical swipes scroll the page instead of capturing them as a drag.
+  const pending = useRef<{ x: number; y: number; id: number } | null>(null);
   const lastX = useRef(0);
   const lastMoveTime = useRef(0);
   const velocity = useRef(0);
@@ -144,6 +147,7 @@ export default function DraggableVideo() {
   }, [draw, startLoop]);
 
   const releaseDrag = useCallback(() => {
+    pending.current = null;
     if (!dragging.current) return;
     dragging.current = false;
     if (cachedFrames.length) {
@@ -240,19 +244,41 @@ export default function DraggableVideo() {
   }, [draw, startLoop]);
 
   // ── pointer handlers ──────────────────────────────────────
+  // Directional lock: on touchdown we only REMEMBER the start point — we do NOT
+  // capture the pointer or start dragging yet. We wait for the first move to
+  // decide intent: a mostly-vertical swipe is left to the browser so the page
+  // scrolls (capturing it on touchdown is what made iOS Safari refuse to scroll
+  // when your finger landed on the Game Boy); a mostly-horizontal drag rotates.
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     // Only allow rotating once frames are loaded. Dragging during the video
     // phase scrubs the still-buffering hero video and blanks it out.
     if (!cachedFrames.length) return;
-    dragging.current = true;
-    lastX.current = e.clientX;
-    lastMoveTime.current = performance.now();
-    velocity.current = 0;
-    cancelAnimationFrame(rafId.current);
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    pending.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
   }, []);
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
+    // Resolve gesture direction before committing to a rotate.
+    if (pending.current && !dragging.current) {
+      const adx = Math.abs(e.clientX - pending.current.x);
+      const ady = Math.abs(e.clientY - pending.current.y);
+      if (adx < 8 && ady < 8) return; // below intent threshold — wait
+      if (ady > adx) {
+        // vertical intent → let the browser scroll the page; abandon this gesture
+        pending.current = null;
+        return;
+      }
+      // horizontal intent → begin rotating (and capture so the drag is smooth)
+      dragging.current = true;
+      lastX.current = e.clientX;
+      lastMoveTime.current = performance.now();
+      velocity.current = 0;
+      cancelAnimationFrame(rafId.current);
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture(pending.current.id);
+      } catch {}
+      pending.current = null;
+    }
+
     if (!dragging.current || !cachedFrames.length) return;
     const now = performance.now();
     const dx = e.clientX - lastX.current;
@@ -274,6 +300,7 @@ export default function DraggableVideo() {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
+      aria-hidden
       className="pointer-events-auto cursor-grab active:cursor-grabbing touch-pan-y select-none"
     >
       <video

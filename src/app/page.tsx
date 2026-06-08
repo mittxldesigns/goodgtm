@@ -46,7 +46,6 @@ export default function Home() {
       <DebugPanel configRef={configRef} fpsRef={fpsRef} gpuInfoRef={gpuInfoRef} />
 
       {/* Global chrome */}
-      <CornerBrackets />
       <NavbarScroll />
 
       {/* Location — bottom right, persists across sections */}
@@ -60,6 +59,9 @@ export default function Home() {
       <main className="w-full">
         {/* Section 1 — Hero */}
         <section id="hero" className="relative min-h-[100svh] w-full overflow-hidden">
+          {/* Four-corner bounding box — hero only (scrolls away with the section) */}
+          <CornerBrackets />
+
           <div
             className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 pointer-events-none"
             style={{ paddingTop: "5vh" }}

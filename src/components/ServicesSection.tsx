@@ -1,7 +1,3 @@
-"use client";
-
-import { useCalendly } from "./CalendlyModal";
-
 const services = [
   {
     title: "TAM Enrichment",
@@ -21,8 +17,6 @@ const services = [
 ];
 
 export default function ServicesSection() {
-  const { open } = useCalendly();
-
   return (
     <div className="relative z-30 flex min-h-[100svh] w-full items-center justify-center px-6 md:px-10 py-20">
       <div className="max-w-2xl w-full">
@@ -59,13 +53,6 @@ export default function ServicesSection() {
             ))}
             <div className="border-t border-white/10" />
           </div>
-
-          <button
-            onClick={open}
-            className="mt-4 px-6 py-3 border border-white/20 text-[11px] font-normal tracking-[0.2em] uppercase text-white/80 transition-all duration-200 hover:border-[#fa76ff]/50 hover:text-[#fa76ff] hover:bg-[#fa76ff]/5 cursor-pointer"
-          >
-            Book a Call
-          </button>
         </div>
       </div>
     </div>

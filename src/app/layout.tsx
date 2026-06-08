@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { CalendlyProvider } from "@/components/CalendlyModal";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,9 +19,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>
-        <CalendlyProvider>{children}</CalendlyProvider>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

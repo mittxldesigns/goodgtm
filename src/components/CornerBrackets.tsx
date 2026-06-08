@@ -7,7 +7,7 @@ export default function CornerBrackets() {
   const color = "rgba(255, 255, 255, 0.6)";
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-50">
+    <div aria-hidden className="pointer-events-none absolute inset-0 z-50">
       {/* Top-left */}
       <div
         className="absolute"

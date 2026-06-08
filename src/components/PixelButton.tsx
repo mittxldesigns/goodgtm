@@ -1,13 +1,9 @@
 "use client";
 
-import { useCalendly } from "./CalendlyModal";
-
 export default function PixelButton({ onClick }: { onClick?: () => void }) {
-  const { open } = useCalendly();
-
   return (
     <button
-      onClick={onClick ?? open}
+      onClick={onClick}
       className="group relative inline-block pointer-events-auto cursor-pointer"
     >
       <div

@@ -461,7 +461,7 @@ export default function WebGLBlob({ configRef, fpsRef, gpuInfoRef }: Props) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- refs are stable, effect runs once on mount
 
   return (
-    <canvas ref={canvasRef}
+    <canvas ref={canvasRef} aria-hidden
       style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", zIndex: 5, pointerEvents: "none" }} />
   );
 }
