@@ -466,6 +466,19 @@ export default function WebGLBlob({ configRef, fpsRef, gpuInfoRef }: Props) {
 
   return (
     <canvas ref={canvasRef} aria-hidden
-      style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100lvh", zIndex: 5, pointerEvents: "none" }} />
+      style={{
+        position: "fixed",
+        // Over-cover the iOS safe areas: start above the status-bar inset and
+        // extend past the home-indicator inset so the bg fills the whole device
+        // edge-to-edge regardless of how lvh resolves under viewport-fit=cover.
+        // env(...) is 0 on non-notched devices / when cover isn't active.
+        top: "calc(0px - env(safe-area-inset-top, 0px))",
+        left: 0,
+        width: "100vw",
+        height:
+          "calc(100lvh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))",
+        zIndex: 5,
+        pointerEvents: "none",
+      }} />
   );
 }
