@@ -358,14 +358,18 @@ export default function WebGLBlob({ configRef, fpsRef, gpuInfoRef }: Props) {
     // change (NOT every frame). This stops the mobile URL-bar show/hide during
     // scroll from reallocating the GL backing store mid-scroll (a real jank
     // source), while keeping the canvas correct after rotation/resize.
-    let cssW = window.innerWidth;
-    let cssH = window.innerHeight;
+    // Size the render buffer from the canvas's own rendered box (100vw x 100lvh).
+    // lvh is the large/stable viewport height, so it covers the full device incl.
+    // behind the iOS URL bar AND doesn't oscillate as the bar shows/hides on
+    // scroll (which would otherwise realloc the GL buffer mid-scroll).
+    let cssW = canvas.clientWidth || window.innerWidth;
+    let cssH = canvas.clientHeight || window.innerHeight;
     let resizeT: ReturnType<typeof setTimeout> | undefined;
     const onResize = () => {
       clearTimeout(resizeT);
       resizeT = setTimeout(() => {
-        cssW = window.innerWidth;
-        cssH = window.innerHeight;
+        cssW = canvas.clientWidth || window.innerWidth;
+        cssH = canvas.clientHeight || window.innerHeight;
       }, 150);
     };
     const onVis = () => {
@@ -462,6 +466,6 @@ export default function WebGLBlob({ configRef, fpsRef, gpuInfoRef }: Props) {
 
   return (
     <canvas ref={canvasRef} aria-hidden
-      style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", zIndex: 5, pointerEvents: "none" }} />
+      style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100lvh", zIndex: 5, pointerEvents: "none" }} />
   );
 }
