@@ -48,8 +48,14 @@ export default function Home() {
       {/* Global chrome */}
       <NavbarScroll />
 
-      {/* Location — bottom right, persists across sections */}
-      <div className="fixed bottom-0 right-0 z-40 pb-8 pr-10 pointer-events-none">
+      {/* Location — bottom right (clear of the iOS home indicator) */}
+      <div
+        style={{
+          paddingBottom: "calc(env(safe-area-inset-bottom) + 2rem)",
+          paddingRight: "calc(env(safe-area-inset-right) + 2.5rem)",
+        }}
+        className="fixed bottom-0 right-0 z-40 pointer-events-none"
+      >
         <span className="text-[10px] font-light tracking-[0.2em] uppercase text-white/35">
           NYC
         </span>

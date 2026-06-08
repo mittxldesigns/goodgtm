@@ -42,16 +42,28 @@ export default function NavbarScroll() {
 
   return (
     <>
-      {/* Logo — top left */}
+      {/* Logo — top left (kept clear of the iOS status bar via safe-area inset) */}
       <button
         onClick={() => goToSection("hero")}
-        className="fixed top-0 left-0 z-50 px-8 py-6 text-[12px] font-normal tracking-[0.3em] uppercase text-white/80 transition-colors duration-200 hover:text-white cursor-pointer"
+        style={{
+          paddingTop: "calc(env(safe-area-inset-top) + 1.5rem)",
+          paddingLeft: "calc(env(safe-area-inset-left) + 2rem)",
+          paddingBottom: "1.5rem",
+          paddingRight: "2rem",
+        }}
+        className="fixed top-0 left-0 z-50 text-[12px] font-normal tracking-[0.3em] uppercase text-white/80 transition-colors duration-200 hover:text-white cursor-pointer"
       >
         Good<span className="text-[#e065e8]">GTM</span>
       </button>
 
-      {/* Nav links — bottom left */}
-      <nav className="fixed bottom-0 left-0 z-50 flex items-center gap-5 px-8 pb-8">
+      {/* Nav links — bottom left (clear of the iOS home indicator / URL bar) */}
+      <nav
+        style={{
+          paddingBottom: "calc(env(safe-area-inset-bottom) + 2rem)",
+          paddingLeft: "calc(env(safe-area-inset-left) + 2rem)",
+        }}
+        className="fixed bottom-0 left-0 z-50 flex items-center gap-5"
+      >
         {links.map((link) => {
           const isActive = active === link.id;
           return (
