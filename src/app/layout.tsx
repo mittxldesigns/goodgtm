@@ -2,8 +2,12 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "GoodGTM",
-  description: "Go-To-Market, Redefined",
+  title: "goodgtm",
+  description: "good go to market.",
+  openGraph: {
+    title: "goodgtm",
+    description: "good go to market.",
+  },
 };
 
 // viewport-fit: cover lets the page (and the fixed WebGL background) extend
