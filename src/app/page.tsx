@@ -17,8 +17,8 @@ export default function Home() {
   const fpsRef = useRef(0);
   const gpuInfoRef = useRef<GpuInfo>({ renderer: "", resolution: [0, 0] });
 
-  const scrollToAbout = () =>
-    document.getElementById("about")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const scrollToId = (id: string) =>
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   // Support deep links like /#about (and redirects from /about) — jump to the section on load.
   useEffect(() => {
@@ -45,21 +45,8 @@ export default function Home() {
       {/* Perf diagnostics — only renders when the URL hash is #debug */}
       <DebugPanel configRef={configRef} fpsRef={fpsRef} gpuInfoRef={gpuInfoRef} />
 
-      {/* Global chrome */}
+      {/* Global chrome — only the logo persists across sections */}
       <NavbarScroll />
-
-      {/* Location — bottom right (clear of the iOS home indicator) */}
-      <div
-        style={{
-          paddingBottom: "calc(env(safe-area-inset-bottom) + 2rem)",
-          paddingRight: "calc(env(safe-area-inset-right) + 2.5rem)",
-        }}
-        className="fixed bottom-0 right-0 z-40 pointer-events-none"
-      >
-        <span className="text-[10px] font-light tracking-[0.2em] uppercase text-white/35">
-          NYC
-        </span>
-      </div>
 
       {/* Sections — the document itself scrolls (native, trackpad-friendly) */}
       <main className="w-full">
@@ -73,7 +60,7 @@ export default function Home() {
             style={{ paddingTop: "5vh" }}
           >
             <DraggableVideo />
-            <PixelButton onClick={scrollToAbout} />
+            <PixelButton onClick={() => scrollToId("about")} />
           </div>
 
           {/* Tagline */}
@@ -81,6 +68,40 @@ export default function Home() {
             <p className="text-[10px] font-light tracking-[0.25em] uppercase text-white/40">
               Go-to-market infrastructure for startups
             </p>
+          </div>
+
+          {/* Hero-only nav + location — live INSIDE the hero so they scroll away
+              with it and never appear over the About/Services sections. */}
+          <nav
+            className="absolute bottom-0 left-0 z-50 flex items-center gap-5"
+            style={{
+              paddingBottom: "calc(env(safe-area-inset-bottom) + 2rem)",
+              paddingLeft: "calc(env(safe-area-inset-left) + 2rem)",
+            }}
+          >
+            <button
+              onClick={() => scrollToId("about")}
+              className="text-[10px] font-normal tracking-[0.2em] uppercase text-white/50 hover:text-white/90 transition-colors duration-200 cursor-pointer"
+            >
+              About
+            </button>
+            <button
+              onClick={() => scrollToId("services")}
+              className="text-[10px] font-normal tracking-[0.2em] uppercase text-white/50 hover:text-white/90 transition-colors duration-200 cursor-pointer"
+            >
+              Services
+            </button>
+          </nav>
+          <div
+            className="absolute bottom-0 right-0 z-40 pointer-events-none"
+            style={{
+              paddingBottom: "calc(env(safe-area-inset-bottom) + 2rem)",
+              paddingRight: "calc(env(safe-area-inset-right) + 2.5rem)",
+            }}
+          >
+            <span className="text-[10px] font-light tracking-[0.2em] uppercase text-white/35">
+              NYC
+            </span>
           </div>
         </section>
 
