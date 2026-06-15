@@ -1,22 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
-// MIN: let the bar fill gracefully. MAX: hard cap so we never hang if the hero
-// never signals ready. Reveal once the bar is full AND the hero is ready, so the
-// curtain lifts on a fully-loaded scene instead of a half-painted one.
-// MIN must stay in sync with the pl-fill / pl-count durations in globals.css.
-const MIN = 1400;
-const MAX = 3200;
+const MIN = 1100; // minimum cover time so the bar has room to read as "loading"
+const MAX = 9000; // hard cap — never hang, even on a slow first load
 const SPLIT = 520;
 
 export default function Preloader() {
   // Default "boot" so the cover is in the SSR / first paint (no blank flash).
   const [phase, setPhase] = useState<"boot" | "split" | "gone">("boot");
+  const barRef = useRef<HTMLDivElement>(null);
+  const numRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const flags = window as Window & { __preloaderGone?: boolean };
+
     // Show only on the first visit this session.
     if (sessionStorage.getItem("gtm-preloader-seen")) {
+      flags.__preloaderGone = true;
       setPhase("gone");
       return;
     }
@@ -26,24 +27,37 @@ export default function Preloader() {
     const ready = () =>
       (window as Window & { __heroReady?: boolean }).__heroReady === true;
 
+    // Real progress, driven imperatively (no React re-render per frame). The
+    // frame decode is deferred (DraggableVideo) so the main thread is free here
+    // and this rAF easing stays smooth instead of snapping. The bar eases toward
+    // 0.9 while the hero loads, then completes to 1.0 once it can show its video.
+    let progress = 0;
     let raf = 0;
     let done = false;
     const finish = () => {
       if (done) return;
       done = true;
+      // Signal the hero it's safe to decode the heavy frames now (the bar has
+      // finished animating, so the decode won't starve it).
+      flags.__preloaderGone = true;
       setPhase("split");
     };
     const tick = () => {
       if (done) return;
-      if (performance.now() - start >= MIN && ready()) {
+      const el = performance.now() - start;
+      const target = ready() ? 1 : 0.9;
+      progress += (target - progress) * 0.045;
+      if (target === 1 && progress > 0.997) progress = 1;
+      if (barRef.current) barRef.current.style.transform = `scaleX(${progress})`;
+      if (numRef.current) numRef.current.textContent = `${Math.round(progress * 100)}%`;
+      if ((progress >= 1 && el >= MIN) || el >= MAX) {
         finish();
         return;
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    // Hard cap — guarantees the reveal even if rAF is throttled (background tab)
-    // or the hero never signals ready.
+    // Reveal floor — fires even if rAF is paused (background tab).
     const cap = setTimeout(finish, MAX);
     return () => {
       done = true;
@@ -101,8 +115,11 @@ export default function Preloader() {
           </div>
           <div className="w-[72px] h-px bg-white/[0.07] overflow-hidden rounded-full">
             <div
-              className="pl-bar h-full w-full rounded-full"
+              ref={barRef}
+              className="h-full w-full rounded-full"
               style={{
+                transformOrigin: "left center",
+                transform: "scaleX(0)",
                 background: "linear-gradient(90deg, #e065e855, #e065e8)",
                 boxShadow: "0 0 8px #e065e866",
                 willChange: "transform",
@@ -110,9 +127,12 @@ export default function Preloader() {
             />
           </div>
           <div
-            className="pl-num text-[9px] font-mono tracking-[0.3em] text-white/35"
+            ref={numRef}
+            className="text-[9px] font-mono tracking-[0.3em] text-white/35"
             style={{ fontVariantNumeric: "tabular-nums" }}
-          />
+          >
+            0%
+          </div>
         </div>
       </div>
 

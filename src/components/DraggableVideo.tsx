@@ -208,61 +208,114 @@ export default function DraggableVideo() {
     }
   }, []);
 
-  // ── load pre-extracted frames ─────────────────────────────
+  // ── load orchestration ────────────────────────────────────
+  // Show the transparent video first (it decodes off the main thread → an
+  // instant hero), THEN decode the 252 rotate-frames in the background. The
+  // frame decode is deferred until the video has a frame, so it doesn't starve
+  // the main thread while the preloader bar animates / the hero first paints
+  // (that starvation is what made the bar snap and the hero reveal blank).
+  //
+  // Source pick: Apple/WebKit renders HEVC (hvc1) alpha but NOT vp9-webm alpha;
+  // every other engine is the reverse. A plain <source> list can't disambiguate
+  // (Safari grabs the vp9 webm and shows black; macOS Chrome-with-HEVC grabs the
+  // hvc1 mp4 and shows black), so choose by engine.
   useEffect(() => {
     const isMobile = window.matchMedia("(max-width: 768px)").matches;
     sens.current = isMobile ? 0.3 : 0.4;
-
-    // If already cached, go straight to canvas
-    if (cachedFrames.length) {
-      setCanvasReady(true);
-      window.dispatchEvent(new Event("hero-ready"));
-      (window as Window & { __heroReady?: boolean }).__heroReady = true;
-      fractional.current = 0;
-      draw(0);
-      startLoop();
-      return () => { cancelAnimationFrame(rafId.current); };
-    }
-
     let cancelled = false;
 
-    loadFrames().then(() => {
-      if (cancelled) return;
-      // Too many frames failed to load — keep the <video> fallback rather than
-      // showing a broken/stuttery canvas.
-      if (cachedFrames.length < TOTAL_FRAMES * 0.8) return;
-      setCanvasReady(true);
-      window.dispatchEvent(new Event("hero-ready"));
+    const markReady = () => {
       (window as Window & { __heroReady?: boolean }).__heroReady = true;
-      fractional.current = 0;
-      draw(0);
-      startLoop();
-    });
-
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(rafId.current);
+      window.dispatchEvent(new Event("hero-ready"));
     };
-  }, [draw, startLoop]);
 
-  // ── pick the transparent video source the engine can actually render ───────
-  // Apple/WebKit renders HEVC (hvc1) alpha but NOT vp9-webm alpha; every other
-  // engine is the reverse (vp9-webm alpha, no HEVC alpha). A plain <source>
-  // list can't disambiguate — Safari grabs the vp9 webm and shows a black box,
-  // and macOS Chrome-with-HEVC would grab the hvc1 mp4 and do the same — so
-  // pick by engine. Both files are transparent; each goes to the engine that
-  // can decode its alpha.
-  useEffect(() => {
+    const showCanvas = () => {
+      fractional.current = 0;
+      draw(0); // paint frame 0 BEFORE the canvas becomes visible (no swap flash)
+      setCanvasReady(true);
+      startLoop();
+    };
+
+    const beginFrames = () => {
+      if (cancelled) return;
+      if (cachedFrames.length) {
+        showCanvas();
+        return;
+      }
+      const decode = () =>
+        loadFrames().then(() => {
+          if (cancelled || cachedFrames.length < TOTAL_FRAMES * 0.8) return;
+          showCanvas();
+        });
+      // Wait until the preloader has revealed so the 252-frame decode doesn't
+      // starve its progress bar; cap the wait so the canvas never stalls.
+      const flags = window as Window & { __preloaderGone?: boolean };
+      if (flags.__preloaderGone) {
+        decode();
+        return;
+      }
+      let waited = 0;
+      const iv = setInterval(() => {
+        if (cancelled) {
+          clearInterval(iv);
+          return;
+        }
+        waited += 60;
+        if (flags.__preloaderGone || waited >= 4000) {
+          clearInterval(iv);
+          decode();
+        }
+      }, 60);
+    };
+
+    // Frames already decoded this session → straight to canvas.
+    if (cachedFrames.length) {
+      markReady();
+      showCanvas();
+      return () => {
+        cancelled = true;
+        cancelAnimationFrame(rafId.current);
+      };
+    }
+
     const v = videoRef.current;
-    if (!v) return;
+    if (!v) {
+      markReady();
+      beginFrames();
+      return () => {
+        cancelled = true;
+        cancelAnimationFrame(rafId.current);
+      };
+    }
+
     const ua = navigator.userAgent;
     const apple =
       /iP(ad|hone|od)/.test(ua) ||
       (/Safari/.test(ua) && !/Chrom(e|ium)|CriOS|FxiOS|Android|Edg|OPR/.test(ua));
     v.src = apple ? "/hero-alpha.mp4?v=5" : "/hero.webm?v=9";
+
+    const onReady = () => {
+      markReady(); // hero now shows a real (transparent) video frame
+      v.play().catch(() => {});
+      beginFrames(); // internally waits for the preloader to reveal before decoding
+    };
+    v.addEventListener("loadeddata", onReady, { once: true });
+    // Safety: if the video never signals a frame, don't hang the preloader.
+    const fallback = setTimeout(() => {
+      markReady();
+      beginFrames();
+    }, 5000);
+
     v.load();
     v.play().catch(() => {});
-  }, []);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(fallback);
+      v.removeEventListener("loadeddata", onReady);
+      cancelAnimationFrame(rafId.current);
+    };
+  }, [draw, startLoop]);
 
   // ── pointer handlers ──────────────────────────────────────
   // Directional lock: on touchdown we only REMEMBER the start point — we do NOT
