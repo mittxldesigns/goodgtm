@@ -243,6 +243,25 @@ export default function DraggableVideo() {
     };
   }, [draw, startLoop]);
 
+  // ── pick the transparent video source the engine can actually render ───────
+  // Apple/WebKit renders HEVC (hvc1) alpha but NOT vp9-webm alpha; every other
+  // engine is the reverse (vp9-webm alpha, no HEVC alpha). A plain <source>
+  // list can't disambiguate — Safari grabs the vp9 webm and shows a black box,
+  // and macOS Chrome-with-HEVC would grab the hvc1 mp4 and do the same — so
+  // pick by engine. Both files are transparent; each goes to the engine that
+  // can decode its alpha.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const ua = navigator.userAgent;
+    const apple =
+      /iP(ad|hone|od)/.test(ua) ||
+      (/Safari/.test(ua) && !/Chrom(e|ium)|CriOS|FxiOS|Android|Edg|OPR/.test(ua));
+    v.src = apple ? "/hero-alpha.mp4?v=5" : "/hero.webm?v=9";
+    v.load();
+    v.play().catch(() => {});
+  }, []);
+
   // ── pointer handlers ──────────────────────────────────────
   // Directional lock: on touchdown we only REMEMBER the start point — we do NOT
   // capture the pointer or start dragging yet. We wait for the first move to
@@ -312,12 +331,7 @@ export default function DraggableVideo() {
         preload="metadata"
         poster="/hero-poster.webp"
         className={`w-[82vw] max-w-[380px] md:w-[460px] md:max-w-none ${canvasReady ? "hidden" : ""}`}
-      >
-        {/* webm first (3.8MB) so Chrome/Android/FF don't pull the 12.6MB mp4;
-            mp4/hvc1 stays as the iOS fallback if vp9-webm can't decode. */}
-        <source src="/hero.webm?v=9" type='video/webm; codecs="vp9"' />
-        <source src="/hero-alpha.mp4?v=5" type='video/mp4; codecs="hvc1"' />
-      </video>
+      />
 
       <canvas
         ref={canvasCallback}
