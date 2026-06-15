@@ -3,9 +3,10 @@
 import { useEffect } from "react";
 
 /**
- * PostHog web-traffic analytics. No-op unless NEXT_PUBLIC_POSTHOG_KEY is set
- * (configure it in Vercel project env once the PostHog account exists), so the
- * site runs fine without it and posthog-js isn't even loaded when absent.
+ * PostHog web-traffic analytics. No-op unless NEXT_PUBLIC_POSTHOG_KEY is set, so
+ * the site runs fine without it. We capture the pageview explicitly in the
+ * `loaded` callback (rather than relying on auto-capture) so a single, reliable
+ * $pageview fires once PostHog is initialised.
  */
 export default function Analytics() {
   useEffect(() => {
@@ -16,8 +17,13 @@ export default function Analytics() {
       posthog.init(key, {
         api_host:
           process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
-        person_profiles: "identified_only",
-        capture_pageview: true,
+        capture_pageview: false, // captured explicitly below
+        capture_pageleave: true,
+        autocapture: true,
+        loaded: (ph) => {
+          (window as Window & { posthog?: unknown }).posthog = ph;
+          ph.capture("$pageview");
+        },
       });
     });
   }, []);
