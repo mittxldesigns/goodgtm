@@ -61,7 +61,8 @@ body {
 .pl-bar {
   transform: scaleX(0);
   transform-origin: left center;
-  animation: pl-fill 1300ms cubic-bezier(0.45, 0, 0.15, 1) forwards;
+  /* duration must stay in sync with MIN in Preloader.tsx */
+  animation: pl-fill 1400ms cubic-bezier(0.45, 0, 0.15, 1) forwards;
 }
 
 @keyframes pl-fill {
@@ -71,11 +72,11 @@ body {
 .pl-num {
   --pl-count: 0;
   counter-reset: plc var(--pl-count);
-  animation: pl-count 1300ms cubic-bezier(0.45, 0, 0.15, 1) forwards;
+  animation: pl-count 1400ms cubic-bezier(0.45, 0, 0.15, 1) forwards;
 }
 
 .pl-num::after {
-  content: counter(plc);
+  content: counter(plc) "%";
 }
 
 @keyframes pl-count {

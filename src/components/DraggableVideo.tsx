@@ -217,6 +217,7 @@ export default function DraggableVideo() {
     if (cachedFrames.length) {
       setCanvasReady(true);
       window.dispatchEvent(new Event("hero-ready"));
+      (window as Window & { __heroReady?: boolean }).__heroReady = true;
       fractional.current = 0;
       draw(0);
       startLoop();
@@ -232,6 +233,7 @@ export default function DraggableVideo() {
       if (cachedFrames.length < TOTAL_FRAMES * 0.8) return;
       setCanvasReady(true);
       window.dispatchEvent(new Event("hero-ready"));
+      (window as Window & { __heroReady?: boolean }).__heroReady = true;
       fractional.current = 0;
       draw(0);
       startLoop();
