@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useState } from "react";
 import WebGLBlob, { ShaderConfig, DEFAULT_CONFIG, GpuInfo } from "@/components/WebGLBlob";
 import CornerBrackets from "@/components/CornerBrackets";
 import NavbarScroll from "@/components/NavbarScroll";
@@ -9,6 +9,7 @@ import PixelButton from "@/components/PixelButton";
 import DraggableVideo from "@/components/DraggableVideo";
 import AboutSection from "@/components/AboutSection";
 import ServicesSection from "@/components/ServicesSection";
+import SectionModal from "@/components/SectionModal";
 import DebugPanel from "@/components/DebugPanel";
 
 export default function Home() {
@@ -17,105 +18,85 @@ export default function Home() {
   const fpsRef = useRef(0);
   const gpuInfoRef = useRef<GpuInfo>({ renderer: "", resolution: [0, 0] });
 
-  const scrollToId = (id: string) =>
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-
-  // Support deep links like /#about (and redirects from /about) — jump to the section on load.
-  useEffect(() => {
-    const id = window.location.hash.slice(1);
-    if (!id) return;
-    const target = document.getElementById(id);
-    if (!target) return;
-    requestAnimationFrame(() => {
-      const root = document.documentElement;
-      const prev = root.style.scrollBehavior;
-      root.style.scrollBehavior = "auto";
-      target.scrollIntoView({ block: "start" });
-      root.style.scrollBehavior = prev;
-    });
-  }, []);
+  // Single-screen hero. START + nav open the content as a black popup — there
+  // are no scroll-to sections anymore (Nate: "i want it to just be this").
+  const [modal, setModal] = useState<null | "about" | "services">(null);
 
   return (
     <>
       <Preloader />
 
-      {/* Persistent WebGL background — fixed, spans every section */}
+      {/* Persistent WebGL background */}
       <WebGLBlob configRef={configRef} fpsRef={fpsRef} gpuInfoRef={gpuInfoRef} />
 
       {/* Perf diagnostics — only renders when the URL hash is #debug */}
       <DebugPanel configRef={configRef} fpsRef={fpsRef} gpuInfoRef={gpuInfoRef} />
 
-      {/* Global chrome — only the logo persists across sections */}
+      {/* Persistent logo */}
       <NavbarScroll />
 
-      {/* Sections — the document itself scrolls (native, trackpad-friendly) */}
-      <main className="w-full">
-        {/* Section 1 — Hero */}
-        <section id="hero" className="relative min-h-[100svh] w-full overflow-hidden">
-          {/* Four-corner bounding box — hero only (scrolls away with the section) */}
-          <CornerBrackets />
+      {/* The whole page is the hero — one screen, no scrolling. */}
+      <main id="hero" className="relative min-h-[100svh] w-full overflow-hidden">
+        {/* Four-corner bounding box */}
+        <CornerBrackets />
 
-          <div
-            className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 pointer-events-none"
-            style={{ paddingTop: "5vh" }}
+        <div
+          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 pointer-events-none"
+          style={{ paddingTop: "5vh" }}
+        >
+          <DraggableVideo />
+          <PixelButton onClick={() => setModal("about")} />
+        </div>
+
+        {/* Tagline */}
+        <div className="absolute bottom-[80px] left-0 right-0 z-30 flex justify-center">
+          <p className="text-[10px] font-light tracking-[0.25em] uppercase text-white/40">
+            Go-to-market infrastructure for startups
+          </p>
+        </div>
+
+        {/* Nav — opens the content popups */}
+        <nav
+          className="absolute bottom-0 left-0 z-50 flex items-center gap-5"
+          style={{
+            paddingBottom: "calc(env(safe-area-inset-bottom) + 2rem)",
+            paddingLeft: "calc(env(safe-area-inset-left) + 2rem)",
+          }}
+        >
+          <button
+            onClick={() => setModal("about")}
+            className="text-[10px] font-normal tracking-[0.2em] uppercase text-white/50 hover:text-white/90 transition-colors duration-200 cursor-pointer"
           >
-            <DraggableVideo />
-            <PixelButton onClick={() => scrollToId("about")} />
-          </div>
-
-          {/* Tagline */}
-          <div className="absolute bottom-[80px] left-0 right-0 z-30 flex justify-center">
-            <p className="text-[10px] font-light tracking-[0.25em] uppercase text-white/40">
-              Go-to-market infrastructure for startups
-            </p>
-          </div>
-
-          {/* Hero-only nav + location — live INSIDE the hero so they scroll away
-              with it and never appear over the About/Services sections. */}
-          <nav
-            className="absolute bottom-0 left-0 z-50 flex items-center gap-5"
-            style={{
-              paddingBottom: "calc(env(safe-area-inset-bottom) + 2rem)",
-              paddingLeft: "calc(env(safe-area-inset-left) + 2rem)",
-            }}
+            About
+          </button>
+          <button
+            onClick={() => setModal("services")}
+            className="text-[10px] font-normal tracking-[0.2em] uppercase text-white/50 hover:text-white/90 transition-colors duration-200 cursor-pointer"
           >
-            <button
-              onClick={() => scrollToId("about")}
-              className="text-[10px] font-normal tracking-[0.2em] uppercase text-white/50 hover:text-white/90 transition-colors duration-200 cursor-pointer"
-            >
-              About
-            </button>
-            <button
-              onClick={() => scrollToId("services")}
-              className="text-[10px] font-normal tracking-[0.2em] uppercase text-white/50 hover:text-white/90 transition-colors duration-200 cursor-pointer"
-            >
-              Services
-            </button>
-          </nav>
-          <div
-            className="absolute bottom-0 right-0 z-40 pointer-events-none"
-            style={{
-              paddingBottom: "calc(env(safe-area-inset-bottom) + 2rem)",
-              paddingRight: "calc(env(safe-area-inset-right) + 2.5rem)",
-            }}
-          >
-            <span className="text-[10px] font-light tracking-[0.2em] uppercase text-white/35">
-              NYC
-            </span>
-          </div>
-        </section>
+            Services
+          </button>
+        </nav>
 
-        {/* Section 2 — About — transparent so the fixed WebGL background shows
-            through here too (continuous animated bg across every section) */}
-        <section id="about" className="relative z-10 min-h-[100svh] w-full">
-          <AboutSection />
-        </section>
-
-        {/* Section 3 — Services — transparent, same animated bg shows through */}
-        <section id="services" className="relative z-10 min-h-[100svh] w-full">
-          <ServicesSection />
-        </section>
+        {/* Location */}
+        <div
+          className="absolute bottom-0 right-0 z-40 pointer-events-none"
+          style={{
+            paddingBottom: "calc(env(safe-area-inset-bottom) + 2rem)",
+            paddingRight: "calc(env(safe-area-inset-right) + 2.5rem)",
+          }}
+        >
+          <span className="text-[10px] font-light tracking-[0.2em] uppercase text-white/35">
+            NYC
+          </span>
+        </div>
       </main>
+
+      {/* Black popup — START / About / Services content */}
+      {modal && (
+        <SectionModal onClose={() => setModal(null)}>
+          {modal === "about" ? <AboutSection /> : <ServicesSection />}
+        </SectionModal>
+      )}
     </>
   );
 }

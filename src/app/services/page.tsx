@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-// /services is now a section on the single scroll homepage. Keep the URL alive.
+// Services is now a popup on the single-screen homepage; keep the URL alive.
 export default function ServicesPage() {
-  redirect("/#services");
+  redirect("/");
 }
