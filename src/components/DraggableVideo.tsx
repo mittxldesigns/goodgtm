@@ -83,6 +83,7 @@ function loadFrames(): Promise<ImageBitmap[]> {
 export default function DraggableVideo() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const currentFrame = useRef(0);
   const fractional = useRef(0);
   const dragging = useRef(false);
@@ -96,6 +97,7 @@ export default function DraggableVideo() {
   const lastTick = useRef(0);
   const sens = useRef(0.4);
   const [canvasReady, setCanvasReady] = useState(false);
+  const [videoSrc, setVideoSrc] = useState<string | null>(null);
 
   const wrap = (v: number, total: number) => ((v % total) + total) % total;
 
@@ -206,15 +208,25 @@ export default function DraggableVideo() {
   }, []);
 
   // ── load orchestration ────────────────────────────────────
-  // The hero is the transparent poster image (tiny, instant, no codec/autoplay
-  // pitfalls) until the 252 rotate-frames decode and the interactive canvas
-  // takes over. There is NO <video> — it was the source of the blank/slow hero
-  // on Safari (HEVC-alpha, 12.6MB, flaky autoplay). The frame decode is deferred
-  // until the preloader reveals so it doesn't starve the bar / first paint.
+  // The hero is the transparent <video> (motion) over the good transparent
+  // poster (instant, covers the buffer so it's never blank) until the 252
+  // rotate-frames decode and the interactive canvas takes over. The preloader
+  // reveals once the poster is loaded; the frame decode is deferred until the
+  // preloader reveals so it doesn't starve the bar / first paint.
   useEffect(() => {
     const isMobile = window.matchMedia("(max-width: 768px)").matches;
     sens.current = isMobile ? 0.3 : 0.4;
     let cancelled = false;
+
+    // Engine-aware transparent video source: Apple/WebKit renders hvc1 alpha,
+    // everyone else vp9-webm alpha. Set declaratively (state -> <source>) so iOS
+    // autoplays it reliably; the good poster covers the buffer so it's never
+    // blank, and the video gives motion instead of a lifeless still.
+    const ua = navigator.userAgent;
+    const apple =
+      /iP(ad|hone|od)/.test(ua) ||
+      (/Safari/.test(ua) && !/Chrom(e|ium)|CriOS|FxiOS|Android|Edg|OPR/.test(ua));
+    setVideoSrc(apple ? "/hero-alpha.mp4?v=5" : "/hero.webm?v=9");
 
     const markReady = () => {
       (window as Window & { __heroReady?: boolean }).__heroReady = true;
@@ -350,14 +362,28 @@ export default function DraggableVideo() {
       aria-hidden
       className="pointer-events-auto cursor-grab active:cursor-grabbing touch-pan-y select-none"
     >
-      {/* transparent Game Boy poster — instant hero until the canvas takes over */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/hero-poster.webp"
-        alt=""
-        draggable={false}
+      {/* transparent Game Boy video over the poster — motion until the canvas takes over */}
+      <video
+        ref={videoRef}
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        poster="/hero-poster.webp"
         className={`w-[82vw] max-w-[380px] md:w-[460px] md:max-w-none ${canvasReady ? "hidden" : ""}`}
-      />
+      >
+        {videoSrc && (
+          <source
+            src={videoSrc}
+            type={
+              videoSrc.endsWith(".mp4")
+                ? 'video/mp4; codecs="hvc1"'
+                : 'video/webm; codecs="vp9"'
+            }
+          />
+        )}
+      </video>
 
       <canvas
         ref={canvasCallback}
