@@ -1,19 +1,8 @@
 const services = [
-  {
-    title: "TAM Enrichment",
-    description:
-      "We know more about your prospects than they know about themselves. Your AEs just need to show up and rizz.",
-  },
-  {
-    title: "Automated Outbound",
-    description:
-      "Every touchpoint systemized and automated at 1/4 the cost of traditional infrastructure. Your AEs just need to show up.",
-  },
-  {
-    title: "Custom Signal Monitoring",
-    description:
-      "Custom signals across your entire TAM. The moment they're ready, you're ready.",
-  },
+  "TAM Enrichment",
+  "Automated Outbound",
+  "Custom Signal Monitoring",
+  "& everything else",
 ];
 
 // Content-only block — rendered inside the "Services" black popup (SectionModal).
@@ -30,20 +19,15 @@ export default function ServicesSection() {
       </div>
 
       <div className="space-y-0">
-        {services.map((svc, i) => (
-          <div key={svc.title} className="border-t border-white/10 py-5 md:py-6 group">
+        {services.map((title, i) => (
+          <div key={title} className="border-t border-white/10 py-4 md:py-5 group">
             <div className="flex items-baseline gap-4">
               <span className="text-[11px] font-light text-[#fa76ff]/40 tabular-nums">
                 0{i + 1}
               </span>
-              <div>
-                <h3 className="text-[14px] font-medium tracking-wide text-white/90 group-hover:text-[#fa76ff] transition-colors duration-200">
-                  {svc.title}
-                </h3>
-                <p className="mt-2 text-[12px] font-light text-white/55 leading-relaxed max-w-md">
-                  {svc.description}
-                </p>
-              </div>
+              <h3 className="text-[14px] font-medium tracking-wide text-white/90 group-hover:text-[#fa76ff] transition-colors duration-200">
+                {title}
+              </h3>
             </div>
           </div>
         ))}

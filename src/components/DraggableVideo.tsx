@@ -83,7 +83,6 @@ function loadFrames(): Promise<ImageBitmap[]> {
 export default function DraggableVideo() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const currentFrame = useRef(0);
   const fractional = useRef(0);
   const dragging = useRef(false);
@@ -152,9 +151,7 @@ export default function DraggableVideo() {
     dragging.current = false;
     if (cachedFrames.length) {
       Math.abs(velocity.current) > MIN_VELOCITY ? startMomentum() : startLoop();
-      return;
     }
-    videoRef.current?.play();
   }, [startLoop, startMomentum]);
 
   // ── global stuck-drag safety nets ─────────────────────────
@@ -209,16 +206,11 @@ export default function DraggableVideo() {
   }, []);
 
   // ── load orchestration ────────────────────────────────────
-  // Show the transparent video first (it decodes off the main thread → an
-  // instant hero), THEN decode the 252 rotate-frames in the background. The
-  // frame decode is deferred until the video has a frame, so it doesn't starve
-  // the main thread while the preloader bar animates / the hero first paints
-  // (that starvation is what made the bar snap and the hero reveal blank).
-  //
-  // Source pick: Apple/WebKit renders HEVC (hvc1) alpha but NOT vp9-webm alpha;
-  // every other engine is the reverse. A plain <source> list can't disambiguate
-  // (Safari grabs the vp9 webm and shows black; macOS Chrome-with-HEVC grabs the
-  // hvc1 mp4 and shows black), so choose by engine.
+  // The hero is the transparent poster image (tiny, instant, no codec/autoplay
+  // pitfalls) until the 252 rotate-frames decode and the interactive canvas
+  // takes over. There is NO <video> — it was the source of the blank/slow hero
+  // on Safari (HEVC-alpha, 12.6MB, flaky autoplay). The frame decode is deferred
+  // until the preloader reveals so it doesn't starve the bar / first paint.
   useEffect(() => {
     const isMobile = window.matchMedia("(max-width: 768px)").matches;
     sens.current = isMobile ? 0.3 : 0.4;
@@ -278,41 +270,22 @@ export default function DraggableVideo() {
       };
     }
 
-    const v = videoRef.current;
-    if (!v) {
-      markReady();
-      beginFrames();
-      return () => {
-        cancelled = true;
-        cancelAnimationFrame(rafId.current);
-      };
-    }
-
-    const ua = navigator.userAgent;
-    const apple =
-      /iP(ad|hone|od)/.test(ua) ||
-      (/Safari/.test(ua) && !/Chrom(e|ium)|CriOS|FxiOS|Android|Edg|OPR/.test(ua));
-    v.src = apple ? "/hero-alpha.mp4?v=5" : "/hero.webm?v=9";
-
+    // Reveal once the poster is loaded → the preloader lifts on a real (static)
+    // transparent Game Boy, never a blank box.
+    const poster = new Image();
     const onReady = () => {
-      markReady(); // hero now shows a real (transparent) video frame
-      v.play().catch(() => {});
-      beginFrames(); // internally waits for the preloader to reveal before decoding
-    };
-    v.addEventListener("loadeddata", onReady, { once: true });
-    // Safety: if the video never signals a frame, don't hang the preloader.
-    const fallback = setTimeout(() => {
+      if (cancelled) return;
       markReady();
       beginFrames();
-    }, 5000);
-
-    v.load();
-    v.play().catch(() => {});
+    };
+    poster.onload = onReady;
+    poster.onerror = onReady;
+    poster.src = "/hero-poster.webp";
+    const fallback = setTimeout(onReady, 2500);
 
     return () => {
       cancelled = true;
       clearTimeout(fallback);
-      v.removeEventListener("loadeddata", onReady);
       cancelAnimationFrame(rafId.current);
     };
   }, [draw, startLoop]);
@@ -377,14 +350,12 @@ export default function DraggableVideo() {
       aria-hidden
       className="pointer-events-auto cursor-grab active:cursor-grabbing touch-pan-y select-none"
     >
-      <video
-        ref={videoRef}
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="metadata"
-        poster="/hero-poster.webp"
+      {/* transparent Game Boy poster — instant hero until the canvas takes over */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/hero-poster.webp"
+        alt=""
+        draggable={false}
         className={`w-[82vw] max-w-[380px] md:w-[460px] md:max-w-none ${canvasReady ? "hidden" : ""}`}
       />
 
